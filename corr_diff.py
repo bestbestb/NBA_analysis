@@ -17,23 +17,42 @@ df = pd.read_csv('whole_data_lebron.csv')
 
 # make a new df for correlation analysis
 df_corr = pd.DataFrame()
+df_corr['ORtg_diff'] = df['ORtg_diff']
+df_corr['DRtg_diff'] = df['DRtg_diff']
+df_corr['NRtg_diff'] = df['NRtg_diff']
+df_corr['NRtg/A_diff'] = df['NRtg/A_diff']
 df_corr['nrtg'] = df['nrtg']
 df_corr['nrtga'] = df['nrtga']
-df_corr['fanduel_points'] = df['fanduel_points']
 df_corr['home/away'] = df['home/away']
+df_corr['fanduel_points'] = df['fanduel_points']
 
 #print(df_corr)
-#print(df_corr.corr())
+print(df_corr.corr())
 
 
 '''
-nrtg     nrtga  fanduel_points  home/away
-nrtg            1.000000  0.995377        0.037819  -0.001136
-nrtga           0.995377  1.000000        0.039224  -0.001805
-fanduel_points  0.037819  0.039224        1.000000  -0.016659
-home/away      -0.001136 -0.001805       -0.016659   1.000000
+                ORtg_diff  DRtg_diff  NRtg_diff  NRtg/A_diff      nrtg  \
+ORtg_diff        1.000000  -0.358948   0.808316     0.813511 -0.533085   
+DRtg_diff       -0.358948   1.000000  -0.839655    -0.831279  0.559600   
+NRtg_diff        0.808316  -0.839655   1.000000     0.997738 -0.663275   
+NRtg/A_diff      0.813511  -0.831279   0.997738     1.000000 -0.657180   
+nrtg            -0.533085   0.559600  -0.663275    -0.657180  1.000000   
+nrtga           -0.536307   0.541136  -0.653501    -0.653294  0.995377   
+home/away        0.009218   0.025027  -0.010421    -0.009989 -0.001136   
+fanduel_points  -0.004483  -0.120200   0.073169     0.079327  0.037819   
 
-table result shows theres no correlation between nrtg and fanduel points/home and away...
+                   nrtga  home/away  fanduel_points  
+ORtg_diff      -0.536307   0.009218       -0.004483  
+DRtg_diff       0.541136   0.025027       -0.120200  
+NRtg_diff      -0.653501  -0.010421        0.073169  
+NRtg/A_diff    -0.653294  -0.009989        0.079327  
+nrtg            0.995377  -0.001136        0.037819  
+nrtga           1.000000  -0.001805        0.039224  
+home/away      -0.001805   1.000000       -0.016659  
+fanduel_points  0.039224  -0.016659        1.000000  
+
+
+table result shows theres a weak correlation between fanduel points and DRtg_diff  
 
 '''
 
@@ -52,7 +71,7 @@ print(min_f)
 print(max_f)
 # mean = 47.3
 print(np.median(l))
-
+m = np.median(l)
 #plt.plot(l)
 #plt.boxplot(l)
 plt.plot(l)
@@ -64,16 +83,11 @@ came up with scales based on the plots $ min/max/median
 k = []
 
 for f in fanduel:
-    
-    if f > 70:
+    # testing if the result will be greater or smaller than m
+    if f > m:
         x = 'A'
-    if 55 < f and f <= 70:
-        x = 'B'
-    if 40 < f and f <= 55:
-        x = 'C'        
-    if 25 < f and f <= 40:
-        x = 'D'        
-    if f <= 25:
+      
+    if f <= m:
         x = 'E'
             
     k.append(x)
@@ -81,14 +95,14 @@ for f in fanduel:
 k = pd.Series(k)
 df_corr['fanduel_points'] = k
 
-df_corr = df_corr[['nrtg', 'nrtga', 'home/away', 'fanduel_points']]
+df_corr = df_corr[['ORtg_diff', 'DRtg_diff', 'NRtg_diff', 'NRtg/A_diff', 'nrtg', 'nrtga', 'home/away', 'fanduel_points']]
 print(df_corr)
 
 array = df_corr.values
 #print(array)  
         
-X = array[:,0:3]
-Y = array[:,3]
+X = array[:,0:7]
+Y = array[:,7]
 
 validation_size = 0.20
 seed = 7
@@ -138,3 +152,51 @@ SVM: 0.504989 (0.039934)
 # WOWY analysis: player's usage rates when certain units are on the court. 
 # contrarian
 
+# Make predictions on validation dataset
+knn = KNeighborsClassifier()
+knn.fit(X_train, Y_train)
+predictions = knn.predict(X_validation)
+print(accuracy_score(Y_validation, predictions))
+print(confusion_matrix(Y_validation, predictions))
+print(classification_report(Y_validation, predictions))
+
+
+'''
+# after  changing the measure to 40 we get 0.73 correction rate
+
+[1265 rows x 8 columns]
+LR: 0.758853 (0.036470)
+LDA: 0.751922 (0.036351)
+KNN: 0.757833 (0.032732)
+CART: 0.714473 (0.035367)
+NB: 0.758853 (0.036470)
+SVM: 0.766783 (0.032390)
+0.758893280632
+[[174  14]
+ [ 47  18]]
+             precision    recall  f1-score   support
+
+          A       0.79      0.93      0.85       188
+          E       0.56      0.28      0.37        65
+
+avg / total       0.73      0.76      0.73       253
+
+
+but after changing to 47.3 we only get 0.54 correction rate
+
+LR: 0.567181 (0.042787)
+LDA: 0.577014 (0.043821)
+KNN: 0.576053 (0.029609)
+CART: 0.567103 (0.043981)
+NB: 0.508921 (0.064217)
+SVM: 0.581062 (0.037172)
+0.541501976285
+[[61 60]
+ [56 76]]
+             precision    recall  f1-score   support
+
+          A       0.52      0.50      0.51       121
+          E       0.56      0.58      0.57       132
+
+avg / total       0.54      0.54      0.54       253
+'''

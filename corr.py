@@ -65,15 +65,10 @@ k = []
 
 for f in fanduel:
     
-    if f > 70:
+    if f > 40:
         x = 'A'
-    if 55 < f and f <= 70:
-        x = 'B'
-    if 40 < f and f <= 55:
-        x = 'C'        
-    if 25 < f and f <= 40:
-        x = 'D'        
-    if f <= 25:
+        
+    if f <= 40:
         x = 'E'
             
     k.append(x)
